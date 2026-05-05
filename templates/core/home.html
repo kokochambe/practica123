@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Система ТОиР - Главная{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 3rem 0;">
+    <h1 style="font-size: 3rem; color: #2c3e50; margin-bottom: 1rem;">🔧 Информационная система ТОиР</h1>
+    <p style="font-size: 1.3rem; color: #7f8c8d; margin-bottom: 2rem;">
+        Проектирование и разработка информационной системы специалиста отдела технического обслуживания и ремонта оборудования
+    </p>
+    
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1.2rem;">
+            🔐 Вход в систему
+        </a>
+        <a href="{% url 'accounts:register' %}" class="btn btn-success" style="padding: 1rem 2.5rem; font-size: 1.2rem;">
+            📝 Регистрация
+        </a>
+    </div>
+</div>
+
+<div style="margin-top: 4rem;">
+    <h2 style="text-align: center; color: #2c3e50; margin-bottom: 2rem;">Роли в системе</h2>
+    <div class="stats-grid">
+        <div class="stat-card blue" style="text-align: left;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👨‍💼</div>
+            <div class="stat-value" style="font-size: 1.5rem;">Администратор</div>
+            <div class="stat-label" style="text-align: left; margin-top: 1rem; font-size: 0.9rem;">
+                Полный доступ ко всем разделам системы, управление пользователями, отчёты и аудит
+            </div>
+        </div>
+        
+        <div class="stat-card green" style="text-align: left;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚙️</div>
+            <div class="stat-value" style="font-size: 1.5rem;">Инженер ОТиР</div>
+            <div class="stat-label" style="text-align: left; margin-top: 1rem; font-size: 0.9rem;">
+                Создание планов ТО, назначение задач, анализ простоев оборудования
+            </div>
+        </div>
+        
+        <div class="stat-card orange" style="text-align: left;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔧</div>
+            <div class="stat-value" style="font-size: 1.5rem;">Техник</div>
+            <div class="stat-label" style="text-align: left; margin-top: 1rem; font-size: 0.9rem;">
+                Просмотр своих нарядов, изменение статусов, отметка выполнения работ
+            </div>
+        </div>
+        
+        <div class="stat-card red" style="text-align: left;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
+            <div class="stat-value" style="font-size: 1.5rem;">Кладовщик</div>
+            <div class="stat-label" style="text-align: left; margin-top: 1rem; font-size: 0.9rem;">
+                Управление складом запчастей, заявки на выдачу, контроль остатков
+            </div>
+        </div>
+        
+        <div class="stat-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); text-align: left;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📚</div>
+            <div class="stat-value" style="font-size: 1.5rem; color: #2c3e50;">Практикант</div>
+            <div class="stat-label" style="text-align: left; margin-top: 1rem; font-size: 0.9rem; color: #555;">
+                Доступ только на чтение: справочники, чек-листы, просмотр выполненных нарядов
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 4rem;" class="card">
+    <h2 style="text-align: center;">📋 Возможности системы</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div style="padding: 1rem;">
+            <h3 style="color: #3498db; margin-bottom: 0.5rem;">📊 Реестр оборудования</h3>
+            <p style="color: #666;">Учёт всего оборудования с инвентарными номерами, техническими характеристиками и статусами</p>
+        </div>
+        <div style="padding: 1rem;">
+            <h3 style="color: #3498db; margin-bottom: 0.5rem;">📅 Планирование ТО</h3>
+            <p style="color: #666;">Графики технического обслуживания, автоматическое создание нарядов по расписанию</p>
+        </div>
+        <div style="padding: 1rem;">
+            <h3 style="color: #3498db; margin-bottom: 0.5rem;">📝 Наряды-заказы</h3>
+            <p style="color: #666;">Создание, назначение и отслеживание статуса ремонтных работ</p>
+        </div>
+        <div style="padding: 1rem;">
+            <h3 style="color: #3498db; margin-bottom: 0.5rem;">📦 Склад запчастей</h3>
+            <p style="color: #666;">Учёт запчастей, заявки на выдачу, предупреждения о низких остатках</p>
+        </div>
+        <div style="padding: 1rem;">
+            <h3 style="color: #3498db; margin-bottom: 0.5rem;">📈 Отчётность</h3>
+            <p style="color: #666;">Анализ простоев, статистика выполненных работ, эффективность персонала</p>
+        </div>
+        <div style="padding: 1rem;">
+            <h3 style="color: #3498db; margin-bottom: 0.5rem;">👥 Управление ролями</h3>
+            <p style="color: #666;">Разграничение прав доступа в соответствии с должностными обязанностями</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

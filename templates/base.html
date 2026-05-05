@@ -61,6 +61,15 @@
             <a href="{% url 'accounts:logout' %}">Выход</a>
         </div>
     </nav>
+    {% else %}
+    <nav class="navbar" style="justify-content: center;">
+        <h1>🔧 Система ТОиР</h1>
+        <div style="margin-left: 2rem;">
+            <a href="{% url 'accounts:home' %}" style="color: white; text-decoration: none; margin-left: 1rem; padding: 0.5rem 1rem; border-radius: 4px;">Главная</a>
+            <a href="{% url 'accounts:login' %}" style="color: white; text-decoration: none; margin-left: 1rem; padding: 0.5rem 1rem; border-radius: 4px;">Вход</a>
+            <a href="{% url 'accounts:register' %}" style="color: white; text-decoration: none; margin-left: 1rem; padding: 0.5rem 1rem; border-radius: 4px;">Регистрация</a>
+        </div>
+    </nav>
     {% endif %}
     
     <div class="container">
