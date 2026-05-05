@@ -3,7 +3,7 @@
 {% block title %}Панель администратора{% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">📊 Панель администратора</h1>
+<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">📊 Панель администратора / Начальника ОТК</h1>
 
 <div class="stats-grid">
     <div class="stat-card blue">
@@ -22,20 +22,42 @@
         <div class="stat-value">{{ new_orders|default:0 }}</div>
         <div class="stat-label">Новых нарядов</div>
     </div>
-</div>
-
-<div class="card" style="margin-top: 1.5rem;">
-    <h2>👥 Управление системой</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-        <a href="/admin/accounts/user/" class="btn btn-primary">Пользователи</a>
-        <a href="/admin/equipment/equipment/" class="btn btn-primary">Оборудование</a>
-        <a href="/admin/workorders/workorder/" class="btn btn-primary">Наряды-заказы</a>
-        <a href="/admin/inventory/sparepart/" class="btn btn-primary">Запчасти</a>
+    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="stat-value">{{ in_progress_orders|default:0 }}</div>
+        <div class="stat-label">В работе</div>
+    </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+        <div class="stat-value">{{ completed_orders|default:0 }}</div>
+        <div class="stat-label">Выполнено</div>
     </div>
 </div>
 
-<div class="card">
-    <h2>📋 Последние наряды</h2>
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>👥 Пользователи по ролям</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        {% for role_stat in users_by_role %}
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-size: 1.8rem; font-weight: bold; color: #3498db;">{{ role_stat.count }}</div>
+            <div style="color: #666; font-size: 0.9rem;">{{ role_stat.role }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>⚡ Быстрые действия</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <a href="/admin/accounts/user/" class="btn btn-primary">👤 Управление пользователями</a>
+        <a href="/admin/equipment/equipment/" class="btn btn-primary">🔧 Оборудование</a>
+        <a href="/admin/workorders/workorder/" class="btn btn-primary">📝 Наряды-заказы</a>
+        <a href="/admin/inventory/sparepart/" class="btn btn-primary">📦 Запчасти</a>
+        <a href="/admin/workorders/maintenanceschedule/" class="btn btn-success">📅 Графики ТО</a>
+        <a href="/admin/inventory/partrequest/" class="btn btn-danger">🚨 Заявки на запчасти</a>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📋 Последние наряды-заказы</h2>
     <table>
         <thead>
             <tr>
@@ -44,19 +66,50 @@
                 <th>Тип</th>
                 <th>Статус</th>
                 <th>Исполнитель</th>
+                <th>Дата создания</th>
             </tr>
         </thead>
         <tbody>
-            {% for order in recent_orders|default:"" %}
+            {% for order in recent_orders %}
             <tr>
                 <td>#{{ order.id }}</td>
-                <td>{{ order.equipment.inv_number }}</td>
-                <td>{{ order.get_order_type_display }}</td>
+                <td>{{ order.equipment.inv_number }} - {{ order.equipment.name }}</td>
+                <td><span class="badge badge-{{ order.order_type }}">{{ order.get_order_type_display }}</span></td>
                 <td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
                 <td>{{ order.assigned_user.username|default:"Не назначен" }}</td>
+                <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5">Нет данных</td></tr>
+            <tr><td colspan="6" style="text-align: center; color: #999;">Нет данных</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📦 Запчасти с низким остатком</h2>
+    <p style="color: #e74c3c; margin-bottom: 1rem;"><strong>Внимание: {{ low_stock_parts|default:0 }} позиций требуют пополнения!</strong></p>
+    <table>
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Артикул</th>
+                <th>Текущий остаток</th>
+                <th>Мин. запас</th>
+                <th>Ед. изм.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for part in low_stock_parts_list|default:"" %}
+            <tr>
+                <td>{{ part.name }}</td>
+                <td>{{ part.part_number }}</td>
+                <td style="color: #e74c3c; font-weight: bold;">{{ part.current_stock }}</td>
+                <td>{{ part.min_stock }}</td>
+                <td>{{ part.unit }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align: center; color: #999;">Нет данных или все запасы в норме</td></tr>
             {% endfor %}
         </tbody>
     </table>

@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import F
+from django.db.models import F, Count, Q
+from django.utils import timezone
+from datetime import timedelta
 from .models import User
-from .forms import RegistrationForm
 
 
 def home_view(request):
@@ -82,8 +83,11 @@ def dashboard_view(request):
         context['total_orders'] = WorkOrder.objects.count()
         context['new_orders'] = WorkOrder.objects.filter(status='new').count()
         context['in_progress_orders'] = WorkOrder.objects.filter(status='in_progress').count()
+        context['completed_orders'] = WorkOrder.objects.filter(status='completed').count()
         context['total_parts'] = SparePart.objects.count()
         context['low_stock_parts'] = SparePart.objects.filter(current_stock__lte=F('min_stock')).count()
+        context['recent_orders'] = WorkOrder.objects.select_related('equipment', 'assigned_user').order_by('-created_at')[:10]
+        context['users_by_role'] = User.objects.values('role').annotate(count=Count('id'))
         template = 'dashboards/admin.html'
         
     elif user.is_engineer:
@@ -93,27 +97,32 @@ def dashboard_view(request):
         context['equipment_count'] = Equipment.objects.filter(workshop=user.department).count() if user.department else Equipment.objects.count()
         context['planned_orders'] = WorkOrder.objects.filter(order_type='planned', status__in=['new', 'assigned']).count()
         context['emergency_orders'] = WorkOrder.objects.filter(order_type='emergency', status__in=['new', 'assigned', 'in_progress']).count()
+        context['all_equipment'] = Equipment.objects.all()[:20]
+        context['pending_orders'] = WorkOrder.objects.filter(status__in=['new', 'assigned']).select_related('equipment')[:10]
         template = 'dashboards/engineer.html'
         
     elif user.is_technician:
         from workorders.models import WorkOrder
         
-        context['my_orders'] = WorkOrder.objects.filter(assigned_user=user).exclude(status='completed')
+        context['my_orders'] = WorkOrder.objects.filter(assigned_user=user).exclude(status='completed').select_related('equipment')
         context['completed_orders'] = WorkOrder.objects.filter(assigned_user=user, status='completed').count()
+        context['all_my_orders'] = WorkOrder.objects.filter(assigned_user=user).select_related('equipment').order_by('-created_at')[:15]
         template = 'dashboards/technician.html'
         
     elif user.is_storekeeper:
         from inventory.models import SparePart, PartRequest
         
         context['low_stock_parts'] = SparePart.objects.filter(current_stock__lte=F('min_stock'))
-        context['pending_requests'] = PartRequest.objects.filter(status='requested')
+        context['pending_requests'] = PartRequest.objects.filter(status='requested').select_related('part', 'requested_by')[:10]
+        context['all_parts'] = SparePart.objects.all()[:20]
+        context['recent_requests'] = PartRequest.objects.select_related('part', 'requested_by').order_by('-created_at')[:10]
         template = 'dashboards/storekeeper.html'
         
     elif user.is_trainee:
         from equipment.models import Equipment
         from workorders.models import WorkOrder
         
-        context['recent_orders'] = WorkOrder.objects.filter(status='completed')[:10]
+        context['recent_orders'] = WorkOrder.objects.filter(status='completed').select_related('equipment', 'assigned_user')[:15]
         context['equipment_list'] = Equipment.objects.all()[:20]
         template = 'dashboards/trainee.html'
     else:
