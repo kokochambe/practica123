@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель техника{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">🔧 Панель рабочего / Слесаря-ремонтника</h1>
+
+<div class="stats-grid">
+    <div class="stat-card orange">
+        <div class="stat-value">{{ my_orders.count|default:0 }}</div>
+        <div class="stat-label">Мои наряды в работе</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-value">{{ completed_orders|default:0 }}</div>
+        <div class="stat-label">Выполнено нарядов</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📋 Мои наряды</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Оборудование</th>
+                <th>Тип работ</th>
+                <th>Приоритет</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in my_orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.equipment.inv_number }} - {{ order.equipment.name }}</td>
+                <td>{{ order.get_order_type_display }}</td>
+                <td>{{ order.get_priority_display }}</td>
+                <td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Нет активных нарядов</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

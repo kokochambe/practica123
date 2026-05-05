@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель администратора{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">📊 Панель администратора</h1>
+
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-value">{{ total_equipment|default:0 }}</div>
+        <div class="stat-label">Всего оборудования</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-value">{{ active_equipment|default:0 }}</div>
+        <div class="stat-label">В эксплуатации</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-value">{{ total_orders|default:0 }}</div>
+        <div class="stat-label">Всего нарядов</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-value">{{ new_orders|default:0 }}</div>
+        <div class="stat-label">Новых нарядов</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>👥 Управление системой</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <a href="/admin/accounts/user/" class="btn btn-primary">Пользователи</a>
+        <a href="/admin/equipment/equipment/" class="btn btn-primary">Оборудование</a>
+        <a href="/admin/workorders/workorder/" class="btn btn-primary">Наряды-заказы</a>
+        <a href="/admin/inventory/sparepart/" class="btn btn-primary">Запчасти</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📋 Последние наряды</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Оборудование</th>
+                <th>Тип</th>
+                <th>Статус</th>
+                <th>Исполнитель</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in recent_orders|default:"" %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.equipment.inv_number }}</td>
+                <td>{{ order.get_order_type_display }}</td>
+                <td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                <td>{{ order.assigned_user.username|default:"Не назначен" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Нет данных</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель инженера{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">⚙️ Панель специалиста ОТиР</h1>
+
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-value">{{ equipment_count|default:0 }}</div>
+        <div class="stat-label">Оборудование в цехе</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-value">{{ planned_orders|default:0 }}</div>
+        <div class="stat-label">Плановые ТО</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-value">{{ emergency_orders|default:0 }}</div>
+        <div class="stat-label">Аварийные заявки</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📋 Быстрые действия</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <a href="/admin/workorders/workorder/add/" class="btn btn-primary">Создать наряд</a>
+        <a href="/admin/equipment/equipment/" class="btn btn-primary">Реестр оборудования</a>
+        <a href="/admin/workorders/workorder/?status=new" class="btn btn-primary">Новые заявки</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель практиканта{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">📚 Панель ученика / Практиканта</h1>
+
+<div class="card">
+    <h2>ℹ️ Режим только для чтения</h2>
+    <p style="color: #666; margin-top: 0.5rem;">В этом режиме вы можете просматривать справочники, чек-листы и выполненные наряды.</p>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📋 Последние выполненные наряды (для обучения)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Оборудование</th>
+                <th>Тип работ</th>
+                <th>Описание</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in recent_orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.equipment.inv_number }} - {{ order.equipment.name }}</td>
+                <td>{{ order.get_order_type_display }}</td>
+                <td>{{ order.description|truncatechars:50 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Нет данных</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>⚙️ Оборудование (примеры)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Инв. номер</th>
+                <th>Наименование</th>
+                <th>Тип</th>
+                <th>Цех</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for eq in equipment_list %}
+            <tr>
+                <td>{{ eq.inv_number }}</td>
+                <td>{{ eq.name }}</td>
+                <td>{{ eq.type }}</td>
+                <td>{{ eq.workshop }}</td>
+                <td>{{ eq.get_status_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Нет данных</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
