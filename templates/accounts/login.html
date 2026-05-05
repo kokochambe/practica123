@@ -19,6 +19,16 @@
             <button type="submit" class="btn btn-primary" style="width: 100%;">Войти</button>
         </form>
         
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; text-align: center;">
+            <p style="color: #666;">
+                Нет аккаунта? 
+                <a href="{% url 'accounts:register' %}" style="color: #3498db; text-decoration: none; font-weight: 500;">Зарегистрироваться</a>
+            </p>
+            <p style="margin-top: 0.5rem;">
+                <a href="{% url 'accounts:home' %}" style="color: #666; text-decoration: none; font-size: 0.9rem;">← На главную</a>
+            </p>
+        </div>
+        
         <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.9rem; color: #666;">
             <p><strong>Тестовые учётные записи:</strong></p>
             <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">

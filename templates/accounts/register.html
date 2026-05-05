@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 2rem auto;">
+    <div class="card">
+        <h2 style="text-align: center;">📝 Регистрация нового пользователя</h2>
+        <p style="text-align: center; color: #666; margin-bottom: 1.5rem;">
+            Создайте учётную запись для доступа к системе ТОиР
+        </p>
+        
+        <form method="post" style="margin-top: 1.5rem;">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Имя пользователя *</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.username.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">Email *</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.email.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="{{ form.first_name.id_for_label }}">Имя *</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.first_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.last_name.id_for_label }}">Фамилия *</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.last_name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.role.id_for_label }}">Роль в системе *</label>
+                {{ form.role }}
+                {% if form.role.errors %}
+                    <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.role.errors.0 }}</div>
+                {% endif %}
+                <small style="color: #666; display: block; margin-top: 0.5rem;">
+                    Выберите роль, соответствующую вашей должности
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.department.id_for_label }}">Отдел/Цех</label>
+                {{ form.department }}
+                {% if form.department.errors %}
+                    <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.department.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.phone.id_for_label }}">Телефон</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                    <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.phone.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.password1.id_for_label }}">Пароль *</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.password1.errors.0 }}</div>
+                {% endif %}
+                <small style="color: #666; display: block; margin-top: 0.5rem;">
+                    Минимум 8 символов. Не используйте слишком простые пароли.
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.password2.id_for_label }}">Подтверждение пароля *</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <div style="color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.password2.errors.0 }}</div>
+                {% endif %}
+            </div>
+            
+            <button type="submit" class="btn btn-success" style="width: 100%; margin-top: 1rem;">
+                Зарегистрироваться
+            </button>
+        </form>
+        
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; text-align: center;">
+            <p style="color: #666;">
+                Уже есть аккаунт? 
+                <a href="{% url 'accounts:login' %}" style="color: #3498db; text-decoration: none; font-weight: 500;">Войти</a>
+            </p>
+            <p style="margin-top: 0.5rem;">
+                <a href="{% url 'accounts:home' %}" style="color: #666; text-decoration: none; font-size: 0.9rem;">← На главную</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

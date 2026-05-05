@@ -3,6 +3,14 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import User
+from .forms import RegistrationForm
+
+
+def home_view(request):
+    """Главная страница системы"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'core/home.html')
 
 
 def login_view(request):
@@ -25,11 +33,32 @@ def login_view(request):
     return render(request, 'accounts/login.html')
 
 
+def register_view(request):
+    """Представление регистрации нового пользователя"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password1'])
+            user.save()
+            messages.success(request, f'Регистрация успешна! Теперь вы можете войти как {user.username}')
+            return redirect('login')
+        else:
+            messages.error(request, 'Ошибка регистрации. Проверьте данные.')
+    else:
+        form = RegistrationForm()
+    
+    return render(request, 'accounts/register.html', {'form': form})
+
+
 def logout_view(request):
     """Представление выхода из системы"""
     logout(request)
     messages.info(request, 'Вы вышли из системы')
-    return redirect('login')
+    return redirect('home')
 
 
 @login_required
