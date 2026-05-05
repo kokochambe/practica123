@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import F
 from .models import User
 from .forms import RegistrationForm
 
@@ -9,14 +10,14 @@ from .forms import RegistrationForm
 def home_view(request):
     """Главная страница системы"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('accounts:dashboard')
     return render(request, 'core/home.html')
 
 
 def login_view(request):
     """Представление входа в систему"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('accounts:dashboard')
     
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -26,7 +27,7 @@ def login_view(request):
         if user is not None and user.is_active:
             login(request, user)
             messages.success(request, f'Добро пожаловать, {user.username}!')
-            return redirect('dashboard')
+            return redirect('accounts:dashboard')
         else:
             messages.error(request, 'Неверное имя пользователя или пароль')
     
@@ -36,7 +37,7 @@ def login_view(request):
 def register_view(request):
     """Представление регистрации нового пользователя"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('accounts:dashboard')
     
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
@@ -45,7 +46,7 @@ def register_view(request):
             user.set_password(form.cleaned_data['password1'])
             user.save()
             messages.success(request, f'Регистрация успешна! Теперь вы можете войти как {user.username}')
-            return redirect('login')
+            return redirect('accounts:login')
         else:
             messages.error(request, 'Ошибка регистрации. Проверьте данные.')
     else:
@@ -58,7 +59,7 @@ def logout_view(request):
     """Представление выхода из системы"""
     logout(request)
     messages.info(request, 'Вы вышли из системы')
-    return redirect('home')
+    return redirect('accounts:home')
 
 
 @login_required
@@ -82,7 +83,7 @@ def dashboard_view(request):
         context['new_orders'] = WorkOrder.objects.filter(status='new').count()
         context['in_progress_orders'] = WorkOrder.objects.filter(status='in_progress').count()
         context['total_parts'] = SparePart.objects.count()
-        context['low_stock_parts'] = SparePart.objects.filter(current_stock__lt=models.F('min_stock')).count() if 'models' in dir() else SparePart.objects.filter(current_stock__lte=5).count()
+        context['low_stock_parts'] = SparePart.objects.filter(current_stock__lte=F('min_stock')).count()
         template = 'dashboards/admin.html'
         
     elif user.is_engineer:
@@ -104,7 +105,7 @@ def dashboard_view(request):
     elif user.is_storekeeper:
         from inventory.models import SparePart, PartRequest
         
-        context['low_stock_parts'] = SparePart.objects.filter(current_stock__lte=models.F('min_stock')) if 'models' in dir() else SparePart.objects.filter(current_stock__lte=5)
+        context['low_stock_parts'] = SparePart.objects.filter(current_stock__lte=F('min_stock'))
         context['pending_requests'] = PartRequest.objects.filter(status='requested')
         template = 'dashboards/storekeeper.html'
         
