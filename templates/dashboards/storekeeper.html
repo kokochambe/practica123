@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель кладовщика{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">📦 Панель кладовщика</h1>
+
+<div class="card">
+    <h2>⚠️ Запчасти с низким остатком</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Артикул</th>
+                <th>Наименование</th>
+                <th>Категория</th>
+                <th>Текущий остаток</th>
+                <th>Мин. остаток</th>
+                <th>Место</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for part in low_stock_parts %}
+            <tr>
+                <td>{{ part.sku }}</td>
+                <td>{{ part.name }}</td>
+                <td>{{ part.category|default:"-" }}</td>
+                <td style="color: red; font-weight: bold;">{{ part.current_stock }}</td>
+                <td>{{ part.min_stock }}</td>
+                <td>{{ part.warehouse_location|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Все запчасти в норме</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📋 Заявки на выдачу</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID заявки</th>
+                <th>Наряд-заказ</th>
+                <th>Запчасть</th>
+                <th>Количество</th>
+                <th>Запросил</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in pending_requests %}
+            <tr>
+                <td>#{{ req.id }}</td>
+                <td>#{{ req.work_order.id }}</td>
+                <td>{{ req.spare_part.name }}</td>
+                <td>{{ req.quantity }}</td>
+                <td>{{ req.requested_by.username }}</td>
+                <td><span class="badge badge-{{ req.status }}">{{ req.get_status_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Нет_pending_заявок</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
