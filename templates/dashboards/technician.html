@@ -6,26 +6,37 @@
 <h1 style="margin-bottom: 1.5rem; color: #2c3e50;">🔧 Панель рабочего / Слесаря-ремонтника</h1>
 
 <div class="stats-grid">
-    <div class="stat-card orange">
-        <div class="stat-value">{{ my_orders.count|default:0 }}</div>
-        <div class="stat-label">Мои наряды в работе</div>
+    <div class="stat-card blue">
+        <div class="stat-value">{{ my_orders|length }}</div>
+        <div class="stat-label">Активных нарядов</div>
     </div>
     <div class="stat-card green">
         <div class="stat-value">{{ completed_orders|default:0 }}</div>
-        <div class="stat-label">Выполнено нарядов</div>
+        <div class="stat-label">Выполнено всего</div>
     </div>
 </div>
 
 <div class="card" style="margin-top: 1.5rem;">
-    <h2>📋 Мои наряды</h2>
+    <h2>⚡ Быстрые действия</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <a href="/admin/workorders/workorder/" class="btn btn-primary">📋 Все мои наряды</a>
+        <a href="/admin/workorders/workreport/add/" class="btn btn-success">📝 Отчёт о работе</a>
+        <a href="/admin/inventory/partrequest/add/" class="btn btn-info">📦 Запрос запчастей</a>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📋 Мои текущие наряды</h2>
+    {% if my_orders %}
     <table>
         <thead>
             <tr>
                 <th>ID</th>
                 <th>Оборудование</th>
                 <th>Тип работ</th>
-                <th>Приоритет</th>
+                <th>Описание</th>
                 <th>Статус</th>
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody>
@@ -33,12 +44,44 @@
             <tr>
                 <td>#{{ order.id }}</td>
                 <td>{{ order.equipment.inv_number }} - {{ order.equipment.name }}</td>
-                <td>{{ order.get_order_type_display }}</td>
-                <td>{{ order.get_priority_display }}</td>
+                <td><span class="badge badge-{{ order.order_type }}">{{ order.get_order_type_display }}</span></td>
+                <td>{{ order.description|truncatechars:40 }}</td>
                 <td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                <td>
+                    <a href="/admin/workorders/workorder/{{ order.id }}/change/" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Изменить статус</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #999; text-align: center; padding: 2rem;">У вас нет активных нарядов</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📜 История выполненных работ</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Оборудование</th>
+                <th>Тип</th>
+                <th>Статус</th>
+                <th>Дата завершения</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in all_my_orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.equipment.inv_number }} - {{ order.equipment.name }}</td>
+                <td><span class="badge badge-{{ order.order_type }}">{{ order.get_order_type_display }}</span></td>
+                <td><span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                <td>{{ order.completed_at|date:"d.m.Y H:i"|default:"-" }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="5">Нет активных нарядов</td></tr>
+            <tr><td colspan="5" style="text-align: center; color: #999;">Нет данных</td></tr>
             {% endfor %}
         </tbody>
     </table>

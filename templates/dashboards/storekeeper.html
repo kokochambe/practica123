@@ -3,63 +3,125 @@
 {% block title %}Панель кладовщика{% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">📦 Панель кладовщика</h1>
+<h1 style="margin-bottom: 1.5rem; color: #2c3e50;">📦 Панель кладовщика / "Продавца" запчастей</h1>
 
-<div class="card">
-    <h2>⚠️ Запчасти с низким остатком</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Артикул</th>
-                <th>Наименование</th>
-                <th>Категория</th>
-                <th>Текущий остаток</th>
-                <th>Мин. остаток</th>
-                <th>Место</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for part in low_stock_parts %}
-            <tr>
-                <td>{{ part.sku }}</td>
-                <td>{{ part.name }}</td>
-                <td>{{ part.category|default:"-" }}</td>
-                <td style="color: red; font-weight: bold;">{{ part.current_stock }}</td>
-                <td>{{ part.min_stock }}</td>
-                <td>{{ part.warehouse_location|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6">Все запчасти в норме</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-value">{{ all_parts|length }}</div>
+        <div class="stat-label">Всего позиций</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-value">{{ low_stock_parts|length }}</div>
+        <div class="stat-label">Требуют пополнения</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-value">{{ pending_requests|length }}</div>
+        <div class="stat-label">Заявок на выдачу</div>
+    </div>
 </div>
 
 <div class="card" style="margin-top: 1.5rem;">
-    <h2>📋 Заявки на выдачу</h2>
+    <h2>⚡ Быстрые действия</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        <a href="/admin/inventory/sparepart/add/" class="btn btn-primary">➕ Добавить запчасть</a>
+        <a href="/admin/inventory/partrequest/" class="btn btn-info">📋 Все заявки</a>
+        <a href="/admin/inventory/sparepart/" class="btn btn-success">📦 Реестр запчастей</a>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>🚨 Заявки на выдачу (требуют обработки)</h2>
+    {% if pending_requests %}
     <table>
         <thead>
             <tr>
-                <th>ID заявки</th>
-                <th>Наряд-заказ</th>
+                <th>ID</th>
                 <th>Запчасть</th>
-                <th>Количество</th>
+                <th>Кол-во</th>
                 <th>Запросил</th>
-                <th>Статус</th>
+                <th>Дата</th>
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody>
             {% for req in pending_requests %}
             <tr>
                 <td>#{{ req.id }}</td>
-                <td>#{{ req.work_order.id }}</td>
-                <td>{{ req.spare_part.name }}</td>
-                <td>{{ req.quantity }}</td>
+                <td>{{ req.part.name }} ({{ req.part.part_number }})</td>
+                <td>{{ req.quantity }} {{ req.part.unit }}</td>
+                <td>{{ req.requested_by.username }}</td>
+                <td>{{ req.created_at|date:"d.m.Y H:i" }}</td>
+                <td>
+                    <a href="/admin/inventory/partrequest/{{ req.id }}/change/" class="btn btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Выдать</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #999; text-align: center; padding: 2rem;">Нет заявок на обработку</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>⚠️ Запчасти с низким остатком</h2>
+    {% if low_stock_parts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Артикул</th>
+                <th>Текущий остаток</th>
+                <th>Мин. запас</th>
+                <th>Ед. изм.</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for part in low_stock_parts %}
+            <tr>
+                <td>{{ part.name }}</td>
+                <td>{{ part.part_number }}</td>
+                <td style="color: #e74c3c; font-weight: bold;">{{ part.current_stock }}</td>
+                <td>{{ part.min_stock }}</td>
+                <td>{{ part.unit }}</td>
+                <td>
+                    <a href="/admin/inventory/sparepart/{{ part.id }}/change/" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Пополнить</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #27ae60; text-align: center; padding: 2rem;">✅ Все запасы в норме!</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>📦 Последние заявки</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Запчасть</th>
+                <th>Кол-во</th>
+                <th>Запросил</th>
+                <th>Статус</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in recent_requests %}
+            <tr>
+                <td>#{{ req.id }}</td>
+                <td>{{ req.part.name }}</td>
+                <td>{{ req.quantity }} {{ req.part.unit }}</td>
                 <td>{{ req.requested_by.username }}</td>
                 <td><span class="badge badge-{{ req.status }}">{{ req.get_status_display }}</span></td>
+                <td>{{ req.created_at|date:"d.m.Y" }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="6">Нет_pending_заявок</td></tr>
+            <tr><td colspan="6" style="text-align: center; color: #999;">Нет данных</td></tr>
             {% endfor %}
         </tbody>
     </table>
