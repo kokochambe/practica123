@@ -1,0 +1,257 @@
+SET NOCOUNT ON;
+BEGIN TRAN;
+
+-- 1. ОЧИСТКА
+IF OBJECT_ID('dbo.audit_log', 'U') IS NOT NULL DROP TABLE dbo.audit_log;
+IF OBJECT_ID('dbo.work_reports', 'U') IS NOT NULL DROP TABLE dbo.work_reports;
+IF OBJECT_ID('dbo.part_requests', 'U') IS NOT NULL DROP TABLE dbo.part_requests;
+IF OBJECT_ID('dbo.spare_parts', 'U') IS NOT NULL DROP TABLE dbo.spare_parts;
+IF OBJECT_ID('dbo.maintenance_schedules', 'U') IS NOT NULL DROP TABLE dbo.maintenance_schedules;
+IF OBJECT_ID('dbo.work_orders', 'U') IS NOT NULL DROP TABLE dbo.work_orders;
+IF OBJECT_ID('dbo.equipment', 'U') IS NOT NULL DROP TABLE dbo.equipment;
+IF OBJECT_ID('dbo.users', 'U') IS NOT NULL DROP TABLE dbo.users;
+
+-- 2. СОЗДАНИЕ ТАБЛИЦ
+CREATE TABLE dbo.users (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    username NVARCHAR(50) UNIQUE NOT NULL,
+    password_hash NVARCHAR(128) NOT NULL DEFAULT 'pbkdf2_sha256$placeholder',
+    role NVARCHAR(20) NOT NULL CHECK (role IN ('admin','engineer','technician','storekeeper','trainee')),
+    department NVARCHAR(50),
+    phone NVARCHAR(20),
+    is_active BIT DEFAULT 1,
+    created_at DATETIME2 DEFAULT SYSDATETIME()
+);
+
+CREATE TABLE dbo.equipment (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    inv_number NVARCHAR(30) UNIQUE NOT NULL,
+    name NVARCHAR(100) NOT NULL,
+    type NVARCHAR(50) NOT NULL,
+    workshop NVARCHAR(50) NOT NULL,
+    status NVARCHAR(20) DEFAULT 'active' CHECK (status IN ('active','maintenance','out_of_service','decommissioned')),
+    install_date DATE,
+    warranty_until DATE,
+    last_maintenance DATE,
+    created_at DATETIME2 DEFAULT SYSDATETIME()
+);
+
+CREATE TABLE dbo.work_orders (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    equipment_id INT FOREIGN KEY REFERENCES dbo.equipment(id) ON DELETE CASCADE,
+    order_type NVARCHAR(30) NOT NULL CHECK (order_type IN ('planned','emergency','modernization','inspection')),
+    priority INT NOT NULL DEFAULT 3 CHECK (priority BETWEEN 1 AND 5),
+    status NVARCHAR(20) DEFAULT 'new' CHECK (status IN ('new','assigned','in_progress','pending_parts','completed','rejected')),
+    assigned_user_id INT FOREIGN KEY REFERENCES dbo.users(id) ON DELETE SET NULL,
+    created_by INT FOREIGN KEY REFERENCES dbo.users(id),
+    description NVARCHAR(MAX) DEFAULT 'Техническое обслуживание / устранение неисправности',
+    created_at DATETIME2 DEFAULT SYSDATETIME(),
+    started_at DATETIME2,
+    completed_at DATETIME2
+);
+
+CREATE TABLE dbo.maintenance_schedules (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    equipment_id INT FOREIGN KEY REFERENCES dbo.equipment(id) ON DELETE CASCADE,
+    frequency_days INT NOT NULL,
+    next_due DATE NOT NULL,
+    last_completed DATE,
+    checklist NVARCHAR(MAX) DEFAULT 'Проверка масла, натяжение, очистка фильтров, смазка, замер вибрации',
+    is_active BIT DEFAULT 1
+);
+
+CREATE TABLE dbo.spare_parts (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    sku NVARCHAR(30) UNIQUE NOT NULL,
+    name NVARCHAR(100) NOT NULL,
+    category NVARCHAR(50),
+    unit_price DECIMAL(10,2) NOT NULL CHECK (unit_price >= 0),
+    min_stock INT DEFAULT 5,
+    current_stock INT DEFAULT 0,
+    warehouse_location NVARCHAR(30),
+    updated_at DATETIME2 DEFAULT SYSDATETIME()
+);
+
+CREATE TABLE dbo.part_requests (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    work_order_id INT FOREIGN KEY REFERENCES dbo.work_orders(id) ON DELETE CASCADE,
+    spare_part_id INT FOREIGN KEY REFERENCES dbo.spare_parts(id) ON DELETE NO ACTION,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    status NVARCHAR(20) DEFAULT 'requested' CHECK (status IN ('requested','approved','issued','rejected')),
+    requested_by INT FOREIGN KEY REFERENCES dbo.users(id),
+    fulfilled_by INT FOREIGN KEY REFERENCES dbo.users(id),
+    fulfilled_at DATETIME2
+);
+
+CREATE TABLE dbo.work_reports (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    work_order_id INT FOREIGN KEY REFERENCES dbo.work_orders(id) ON DELETE CASCADE,
+    report_date DATE NOT NULL,
+    hours_spent DECIMAL(4,1) NOT NULL,
+    description NVARCHAR(MAX) DEFAULT 'Работы выполнены по регламенту. Замечаний нет.',
+    technician_signature NVARCHAR(50),
+    created_at DATETIME2 DEFAULT SYSDATETIME()
+);
+
+CREATE TABLE dbo.audit_log (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT FOREIGN KEY REFERENCES dbo.users(id),
+    action NVARCHAR(50) NOT NULL,
+    table_name NVARCHAR(50) NOT NULL,
+    record_id INT,
+    old_value NVARCHAR(MAX),
+    new_value NVARCHAR(MAX),
+    timestamp DATETIME2 DEFAULT SYSDATETIME()
+);
+
+-- Индексы
+CREATE INDEX idx_equipment_status ON dbo.equipment(status);
+CREATE INDEX idx_work_orders_status ON dbo.work_orders(status);
+CREATE INDEX idx_work_orders_assigned ON dbo.work_orders(assigned_user_id);
+CREATE INDEX idx_part_requests_status ON dbo.part_requests(status);
+CREATE INDEX idx_audit_log_timestamp ON dbo.audit_log(timestamp);
+
+-- 3. ВРЕМЕННАЯ ТАБЛИЦА С НОМЕРАМИ СТРОК (живёт до конца сессии)
+SELECT TOP 1000 ROW_NUMBER() OVER(ORDER BY (SELECT NULL)) AS n
+INTO #Numbers
+FROM sys.all_objects a CROSS JOIN sys.all_objects b;
+
+-- Пользователи (20)
+INSERT INTO dbo.users (username, role, department, phone) VALUES
+('admin_otir', 'admin', 'Управление ОТК', '+79001112200'),
+('eng_ivanov', 'engineer', 'Механика', '+79001112201'),
+('eng_petrov', 'engineer', 'Электрика', '+79001112202'),
+('tech_sidorov', 'technician', 'Цех 1', '+79001112203'),
+('tech_kuznetsov', 'technician', 'Цех 2', '+79001112204'),
+('tech_popov', 'technician', 'Цех 1', '+79001112205'),
+('tech_volkov', 'technician', 'Цех 3', '+79001112206'),
+('tech_lebedev', 'technician', 'Цех 2', '+79001112207'),
+('tech_mikhailov', 'technician', 'Цех 1', '+79001112208'),
+('tech_kuzmin', 'technician', 'Цех 3', '+79001112209'),
+('tech_zaitsev', 'technician', 'Цех 2', '+79001112210'),
+('tech_golubev', 'technician', 'Цех 1', '+79001112211'),
+('store_morozov', 'storekeeper', 'Склад A', '+79001112212'),
+('store_novikov', 'storekeeper', 'Склад B', '+79001112213'),
+('store_pavlov', 'storekeeper', 'Склад A', '+79001112214'),
+('trainee_smirnov', 'trainee', 'Практика', '+79001112215'),
+('trainee_fedorov', 'trainee', 'Практика', '+79001112216'),
+('trainee_semenov', 'trainee', 'Практика', '+79001112217'),
+('eng_sokolov', 'engineer', 'Механика', '+79001112218'),
+('eng_vasilyev', 'engineer', 'Электрика', '+79001112219');
+
+-- Оборудование (200)
+INSERT INTO dbo.equipment (inv_number, name, type, workshop, status, install_date, warranty_until, last_maintenance)
+SELECT TOP 200
+    'EQ-' + RIGHT('0000' + CAST(n AS NVARCHAR(4)), 4),
+    CASE (n-1) % 10
+        WHEN 1 THEN 'Насос центробежный НШ-100' WHEN 2 THEN 'Компрессор СБ-0.5'
+        WHEN 3 THEN 'Электродвигатель АИР90L' WHEN 4 THEN 'Редуктор Ц2У-100'
+        WHEN 5 THEN 'Вентилятор осевой ВО-12' WHEN 6 THEN 'Конвейер ленточный КЛ-5'
+        WHEN 7 THEN 'Станок токарный 16К20' WHEN 8 THEN 'Дизель-генератор АД-50'
+        WHEN 9 THEN 'Трансформатор ТМГ-250' ELSE 'Щит распределительный ЩР'
+    END,
+    CASE (n-1) % 10
+        WHEN 1 THEN 'Насосы' WHEN 2 THEN 'Компрессоры' WHEN 3 THEN 'Электропривод'
+        WHEN 4 THEN 'Механика' WHEN 5 THEN 'Вентиляция' WHEN 6 THEN 'Транспорт'
+        WHEN 7 THEN 'Металлообработка' WHEN 8 THEN 'Энергетика' WHEN 9 THEN 'Электрика'
+        ELSE 'Автоматика'
+    END,
+    CASE (n-1) % 4 WHEN 0 THEN 'Цех 1' WHEN 1 THEN 'Цех 2' WHEN 2 THEN 'Цех 3' ELSE 'Котельная' END,
+    CASE ABS(CHECKSUM(NEWID())) % 4 WHEN 0 THEN 'active' WHEN 1 THEN 'active' WHEN 2 THEN 'maintenance' ELSE 'out_of_service' END,
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 2000, CAST(GETDATE() AS DATE)),
+    DATEADD(DAY, ABS(CHECKSUM(NEWID())) % 730, CAST(GETDATE() AS DATE)),
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 180, CAST(GETDATE() AS DATE))
+FROM #Numbers;
+
+-- Графики ТО (150)
+INSERT INTO dbo.maintenance_schedules (equipment_id, frequency_days, next_due, last_completed, is_active)
+SELECT TOP 150
+    id,
+    CASE ABS(CHECKSUM(NEWID())) % 5 WHEN 0 THEN 30 WHEN 1 THEN 60 WHEN 2 THEN 90 WHEN 3 THEN 180 ELSE 365 END,
+    DATEADD(DAY, ABS(CHECKSUM(NEWID())) % 30, CAST(GETDATE() AS DATE)),
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 60, CAST(GETDATE() AS DATE)),
+    1
+FROM dbo.equipment;
+
+-- Наряды (500)
+INSERT INTO dbo.work_orders (equipment_id, order_type, priority, status, assigned_user_id, created_by, description, created_at, started_at, completed_at)
+SELECT TOP 500
+    ABS(CHECKSUM(NEWID())) % 200 + 1,
+    CASE ABS(CHECKSUM(NEWID())) % 5 WHEN 0 THEN 'planned' WHEN 1 THEN 'planned' WHEN 2 THEN 'planned' WHEN 3 THEN 'emergency' ELSE 'inspection' END,
+    ABS(CHECKSUM(NEWID())) % 4 + 1,
+    CASE ABS(CHECKSUM(NEWID())) % 6 WHEN 0 THEN 'new' WHEN 1 THEN 'assigned' WHEN 2 THEN 'in_progress' WHEN 3 THEN 'pending_parts' WHEN 4 THEN 'completed' ELSE 'rejected' END,
+    ABS(CHECKSUM(NEWID())) % 9 + 4,
+    CASE WHEN ABS(CHECKSUM(NEWID())) % 2 = 0 THEN 1 ELSE ABS(CHECKSUM(NEWID())) % 3 + 2 END,
+    CASE WHEN ABS(CHECKSUM(NEWID())) % 3 = 0 THEN 'Аварийный ремонт: повышенная вибрация' ELSE 'Плановое ТО по регламенту' END,
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 365, GETDATE()),
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 300 + 2, GETDATE()),
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 200 + 7, GETDATE())
+FROM #Numbers;
+
+-- Запчасти (80)
+INSERT INTO dbo.spare_parts (sku, name, category, unit_price, min_stock, current_stock, warehouse_location)
+SELECT TOP 80
+    'SP-' + RIGHT('000' + CAST(n AS NVARCHAR(3)), 3),
+    CASE (n-1) % 8
+        WHEN 1 THEN 'Подшипник 6205-2RS' WHEN 2 THEN 'Ремень клиновой B-1200'
+        WHEN 3 THEN 'Масло гидравлическое ВМГЗ' WHEN 4 THEN 'Фильтр воздушный AF-22'
+        WHEN 5 THEN 'Сальник 35x52x10' WHEN 6 THEN 'Предохранитель ПН-15 10А'
+        WHEN 7 THEN 'Контактор КМИ-250' ELSE 'Кабель ВВГнг 3x2.5'
+    END,
+    CASE WHEN (n-1) % 8 < 3 THEN 'Механика' WHEN (n-1) % 8 < 5 THEN 'ГСМ и фильтры' ELSE 'Электрика' END,
+    CAST((ABS(CHECKSUM(NEWID())) % 50000 + 500) / 100.0 AS DECIMAL(10,2)),
+    ABS(CHECKSUM(NEWID())) % 10 + 5,
+    ABS(CHECKSUM(NEWID())) % 50,
+    CASE (n-1) % 3 WHEN 0 THEN 'Сектор A' WHEN 1 THEN 'Сектор B' ELSE 'Сектор C' END
+FROM #Numbers;
+
+-- Заявки на запчасти (300)
+INSERT INTO dbo.part_requests (work_order_id, spare_part_id, quantity, status, requested_by, fulfilled_by, fulfilled_at)
+SELECT TOP 300
+    ABS(CHECKSUM(NEWID())) % 500 + 1,
+    ABS(CHECKSUM(NEWID())) % 80 + 1,
+    ABS(CHECKSUM(NEWID())) % 5 + 1,
+    CASE ABS(CHECKSUM(NEWID())) % 4 WHEN 0 THEN 'requested' WHEN 1 THEN 'approved' WHEN 2 THEN 'issued' ELSE 'rejected' END,
+    ABS(CHECKSUM(NEWID())) % 9 + 4,
+    CASE WHEN ABS(CHECKSUM(NEWID())) % 3 = 0 THEN 13 WHEN ABS(CHECKSUM(NEWID())) % 3 = 1 THEN 12 ELSE 14 END,
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 100, GETDATE())
+FROM #Numbers;
+
+-- Отчёты (400)
+INSERT INTO dbo.work_reports (work_order_id, report_date, hours_spent, description, technician_signature)
+SELECT TOP 400
+    id,
+    DATEADD(DAY, -ABS(CHECKSUM(NEWID())) % 300, CAST(GETDATE() AS DATE)),
+    CAST((ABS(CHECKSUM(NEWID())) % 160 + 5) / 10.0 AS DECIMAL(4,1)),
+    CASE WHEN ABS(CHECKSUM(NEWID())) % 3 = 0 THEN 'Заменены изношенные компоненты. Оборудование в норме.' ELSE 'Проведена диагностика, регулировка, смазка. Замечаний нет.' END,
+    CASE id % 3 WHEN 0 THEN 'Сидоров А.В.' WHEN 1 THEN 'Кузнецов П.И.' ELSE 'Попов Д.С.' END
+FROM dbo.work_orders WHERE status IN ('completed','in_progress') ORDER BY NEWID();
+
+-- Аудит (600)
+INSERT INTO dbo.audit_log (user_id, action, table_name, record_id, old_value, new_value, timestamp)
+SELECT TOP 600
+    ABS(CHECKSUM(NEWID())) % 20 + 1,
+    CASE ABS(CHECKSUM(NEWID())) % 5 WHEN 0 THEN 'CREATE' WHEN 1 THEN 'UPDATE' WHEN 2 THEN 'DELETE' WHEN 3 THEN 'STATUS_CHANGE' ELSE 'PART_REQUEST' END,
+    CASE ABS(CHECKSUM(NEWID())) % 4 WHEN 0 THEN 'equipment' WHEN 1 THEN 'work_orders' WHEN 2 THEN 'spare_parts' ELSE 'part_requests' END,
+    ABS(CHECKSUM(NEWID())) % 500,
+    '{"status":"old"}',
+    '{"status":"new"}',
+    DATEADD(HOUR, -ABS(CHECKSUM(NEWID())) % 720, GETDATE())
+FROM #Numbers;
+
+-- Очистка временной таблицы
+DROP TABLE #Numbers;
+
+COMMIT TRAN;
+GO
+
+-- Проверка результата
+SELECT '✅ База успешно наполнена.' AS Status;
+SELECT 'users' AS Table_Name, COUNT(*) AS Records FROM dbo.users
+UNION ALL SELECT 'equipment', COUNT(*) FROM dbo.equipment
+UNION ALL SELECT 'work_orders', COUNT(*) FROM dbo.work_orders
+UNION ALL SELECT 'maintenance_schedules', COUNT(*) FROM dbo.maintenance_schedules
+UNION ALL SELECT 'spare_parts', COUNT(*) FROM dbo.spare_parts
+UNION ALL SELECT 'part_requests', COUNT(*) FROM dbo.part_requests
+UNION ALL SELECT 'work_reports', COUNT(*) FROM dbo.work_reports
+UNION ALL SELECT 'audit_log', COUNT(*) FROM dbo.audit_log;
